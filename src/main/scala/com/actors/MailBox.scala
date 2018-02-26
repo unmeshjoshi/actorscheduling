@@ -90,7 +90,7 @@ class MailBox(val messageQueue: MessageQueue) extends ForkJoinTask[Unit] {
         actor invoke next
         if (Thread.interrupted())
           throw new InterruptedException("Interrupted while processing actor messages")
-        if ((left > 1) /**&& ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0)*/) //FIXME
+        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0)) //FIXME
           processMailbox(left - 1, deadlineNs)
       }
     }

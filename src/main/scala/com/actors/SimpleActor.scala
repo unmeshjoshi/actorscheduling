@@ -31,5 +31,5 @@ object SimpleActorApp extends App {
     anotherActorRef ! s"Hello Second Actor${a}"
   }
 
-  system.awaitTermination(10, TimeUnit.MINUTES) //figure out why we need to do this.
+  system.awaitTermination(10, TimeUnit.SECONDS) //figure out why we need to do this.
 }
