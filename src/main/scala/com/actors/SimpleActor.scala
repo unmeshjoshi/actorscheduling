@@ -1,18 +1,22 @@
 package com.actors
 
-import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
 
 class SimpleActor extends Actor {
-  val writer = new  PrintWriter(new File("actor.log"))
   override def receive = {
     case anyMessage@_ ⇒ {
-      writer.println(s"Received ${anyMessage}")
-      writer.flush()
+      println(s"Received ${anyMessage}")
     }
   }
 }
 
+class AnotherActor extends Actor {
+  override def receive = {
+    case anyMessage@_ ⇒ {
+      println(s"I am the second one ${anyMessage}")
+    }
+  }
+}
 
 object SimpleActorApp extends App {
   val system = new ActorSystem()
@@ -22,5 +26,10 @@ object SimpleActorApp extends App {
     actorRef ! s"Hello Actor${a}"
   }
 
-  system.dispatcher.executorService.awaitTermination(10, TimeUnit.MINUTES)
+  val anotherActorRef = system.actorOf(classOf[AnotherActor])
+  for( a <- 1 to 1000) {
+    anotherActorRef ! s"Hello Second Actor${a}"
+  }
+
+  system.awaitTermination(10, TimeUnit.MINUTES) //figure out why we need to do this.
 }

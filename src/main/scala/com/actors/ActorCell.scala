@@ -18,7 +18,7 @@ class ActorCell(clazz:Class[_], val dispatcher:Dispatcher) {
     receiveMessage(messageHandle)
   }
 
-  def !(message:Any) = sendMessage(message)
+
   def sendMessage(message:Any) = {
     dispatcher.dispatch(this, new Envelope(message))
   }
