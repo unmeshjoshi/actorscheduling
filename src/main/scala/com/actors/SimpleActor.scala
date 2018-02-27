@@ -2,6 +2,8 @@ package com.actors
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Future
+
 class SimpleActor extends Actor {
   override def receive = {
     case anyMessage@_ ⇒ {
@@ -19,16 +21,23 @@ class AnotherActor extends Actor {
 }
 
 object SimpleActorApp extends App {
+  implicit val executionContext = scala.concurrent.ExecutionContext.global
+
   val system = new ActorSystem()
 
   val actorRef = system.actorOf(classOf[SimpleActor])
-  for( a <- 1 to 1000) {
-    actorRef ! s"Hello Actor${a}"
+  for (a <- 1 to 1000) {
+    Future { //try sending message concurrently to actor
+      actorRef ! s"Hello Actor${a}"
+    }
   }
 
+
   val anotherActorRef = system.actorOf(classOf[AnotherActor])
-  for( a <- 1 to 1000) {
-    anotherActorRef ! s"Hello Second Actor${a}"
+  for (a <- 1 to 1000) {
+    Future { //try sending message concurrently to actor
+      anotherActorRef ! s"Hello Second Actor${a}"
+    }
   }
 
   system.awaitTermination(10, TimeUnit.SECONDS) //figure out why we need to do this.

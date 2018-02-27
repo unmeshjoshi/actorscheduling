@@ -2,6 +2,8 @@ package com.actors
 
 import java.util.concurrent.{ConcurrentLinkedQueue, ForkJoinTask}
 
+import sun.misc.Unsafe
+
 import scala.annotation.tailrec
 
 trait MessageQueue {
@@ -41,15 +43,33 @@ class UnboundedMessageQueue extends ConcurrentLinkedQueue[Envelope] with Message
 }
 
 class MailBox(val messageQueue: MessageQueue) extends ForkJoinTask[Unit] {
+  var isIdle = true
 
-  @volatile var isIdle = true
-
-  def setScheduled(): Unit = {
-    isIdle = false
+  /**
+    * Using synchronied to simplify things. In the real Akka actors code,
+    * its highly optimized by using atomic compare and swap instruction
+    */
+  def setAsScheduled(): Boolean = {
+    this.synchronized {
+      if (isIdle) {
+        isIdle = false
+        true
+      }
+      else {
+        false
+      }
+    }
   }
 
-  def setIdle() = {
-    isIdle = true
+  def setAsIdle():Boolean = {
+    this.synchronized {
+      if (!isIdle) {
+        isIdle = true
+        true
+      } else {
+        false
+      }
+    }
   }
 
   def canBeScheduled() = {
@@ -81,30 +101,31 @@ class MailBox(val messageQueue: MessageQueue) extends ForkJoinTask[Unit] {
                                              deadlineNs: Long = if (dispatcher.isThroughputDeadlineTimeDefined == true) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0L): Unit =
     if (shouldProcessMessage) {
       val next = dequeue()
-      println(s"Dequeueing and processing messages ${next}")
+//      println(s"Dequeueing and processing messages ${next}")
       if (next ne null) {
 
-        println(s" There are ${messageQueue.numberOfMessages} messages")
-        println(" processing message " + next)
+//        println(s" There are ${messageQueue.numberOfMessages} messages")
+//        println(" processing message " + next)
 
         actor invoke next
+
         if (Thread.interrupted())
           throw new InterruptedException("Interrupted while processing actor messages")
+
         if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0)) //FIXME
           processMailbox(left - 1, deadlineNs)
       }
     }
 
   final def run(): Unit = {
-    processMailbox() //Then deal with messages
+    processMailbox()
   }
 
   override def exec() = {
     try {
       run()
     } finally {
-      println(s"Setting idle after processing ${dispatcher.throughput} messages")
-      setIdle
+      setAsIdle
       dispatcher.registerForExecution(this, false, false)
     }
     false //this is critical to tell forkjoinpool that the task is not completed.

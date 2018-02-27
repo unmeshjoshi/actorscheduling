@@ -10,7 +10,6 @@ class ActorCell(clazz:Class[_], val dispatcher:Dispatcher) {
   def mailbox = mailBox
 
   def receiveMessage(messageHandle: Envelope) = {
-    println("Calling receive")
     receive(messageHandle.message)
   }
 
