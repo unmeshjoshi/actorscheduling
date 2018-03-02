@@ -43,16 +43,17 @@ class UnboundedMessageQueue extends ConcurrentLinkedQueue[Envelope] with Message
 }
 
 class MailBox(val messageQueue: MessageQueue) extends ForkJoinTask[Unit] {
-  var isIdle = true
+  private var idle = true
 
+  def isIdle = idle
   /**
     * Using synchronied to simplify things. In the real Akka actors code,
     * its highly optimized by using atomic compare and swap instruction
     */
   def setAsScheduled(): Boolean = {
     this.synchronized {
-      if (isIdle) {
-        isIdle = false
+      if (idle) {
+        idle = false
         true
       }
       else {
@@ -63,8 +64,8 @@ class MailBox(val messageQueue: MessageQueue) extends ForkJoinTask[Unit] {
 
   def setAsIdle():Boolean = {
     this.synchronized {
-      if (!isIdle) {
-        isIdle = true
+      if (!idle) {
+        idle = true
         true
       } else {
         false

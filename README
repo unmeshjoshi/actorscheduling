@@ -1,0 +1,5 @@
+A simple code base explaining how Actors are implemented in Akka
+
+Run
+
+sbt "runMain com.actors.SimpleActorApp"
